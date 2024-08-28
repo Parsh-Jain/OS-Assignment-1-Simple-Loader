@@ -79,27 +79,10 @@ void load_and_run_elf(char* exe) {
     }
 
     // 4. Navigate to the entrypoint address
+    // how to navigate ???
 
-    // Find the segment that contains the entry point
-    void (*start_func)() = NULL; // Function pointer to the entry point
-    for (int i = 0; i < ehdr->e_phnum; i++) {
-        if (phdr[i].p_type == PT_LOAD) {
-            // Check if the entry point falls within this segment
-            if (entry_point >= phdr[i].p_vaddr && entry_point < phdr[i].p_vaddr + phdr[i].p_memsz) {
-                // Calculate the offset within the segment
-                uintptr_t offset = entry_point - phdr[i].p_vaddr;
-                start_func = (void (*)())((char*)virtual_mem + offset);
-                break;
-            }
-        }
-    }
 
-    if (start_func == NULL) {
-        fprintf(stderr, "Error: Entry point not found in loaded segments.\n");
-        free(file_content);
-        exit(EXIT_FAILURE);
-    }
-
+    
     // 5. Call the "_start" method
     int result = _start();
     printf("User _start return value = %d\n",result);
