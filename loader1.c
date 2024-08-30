@@ -39,8 +39,9 @@ void load_and_run_elf(char** exe) {
     
 
     for (int i = 0; i < ehdr->e_phnum; i++) {
+        
+        // 2. Iterate through the PHDR table and find the section of PT_LOAD type that contains the address of the entrypoint method in fib.c
         if (phdr[i].p_type == PT_LOAD) {
-            
             if (ehdr->e_entry >= phdr[i].p_vaddr && ehdr->e_entry < phdr[i].p_vaddr + phdr[i].p_memsz) {
 
                 // 3. Allocate memory of the size "p_memsz" using mmap function
