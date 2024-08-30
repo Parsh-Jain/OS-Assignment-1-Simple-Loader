@@ -40,15 +40,18 @@ void load_and_run_elf(char** exe) {
 
     for (int i = 0; i < ehdr->e_phnum; i++) {
         if (phdr[i].p_type == PT_LOAD) {
-            // 3. Allocate memory of the size "p_memsz" using mmap function
-            void *virtual_mem = mmap(NULL, phdr[i].p_memsz,
+            
+            if (ehdr->e_entry >= phdr[i].p_vaddr && ehdr->e_entry < phdr[i].p_vaddr + phdr[i].p_memsz) {
+
+                // 3. Allocate memory of the size "p_memsz" using mmap function
+                void *virtual_mem = mmap(NULL, phdr[i].p_memsz,
                                PROT_READ | PROT_WRITE | PROT_EXEC,
                                MAP_ANONYMOUS | MAP_PRIVATE, 0, 0);
-            if (virtual_mem == MAP_FAILED) {
-                printf("mmap failed\n");
-                exit(1);
-            }
-            if (ehdr->e_entry >= phdr[i].p_vaddr && ehdr->e_entry < phdr[i].p_vaddr + phdr[i].p_memsz) {
+                if (virtual_mem == MAP_FAILED) {
+                    printf("mmap failed\n");
+                    exit(1);
+                }
+                
                 off_t x = lseek(fd, phdr[i].p_offset, SEEK_SET);
                 
                 if(x < 0){
