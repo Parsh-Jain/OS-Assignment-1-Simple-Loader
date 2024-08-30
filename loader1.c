@@ -3,19 +3,16 @@
 Elf32_Ehdr *ehdr;
 Elf32_Phdr *phdr;
 int fd;
-/*
- * Release memory and other cleanups
- */
-void loader_cleanup(void* load_addr) {
 
+void loader_cleanup() {
+    close(fd);
+    free(ehdr);
+    free(phdr);
 }
-/*
- * Load and run the ELF executable file
- */
 
 void load_and_run_elf(char** exe) {
 
-    fd = open(*exe, O_RDONLY);
+    fd = open(exe[1], O_RDONLY);
 
     if (fd < 0) {
         printf("Failed to open ELF file\n");
@@ -30,6 +27,7 @@ void load_and_run_elf(char** exe) {
     }
     lseek(fd, 0, SEEK_SET);
 
+    // allocate memory for copying binary content
     ehdr = (Elf32_Ehdr*)malloc(sizeof(Elf32_Ehdr));
     read(fd, ehdr, sizeof(Elf32_Ehdr));
     phdr = (Elf32_Phdr*)malloc(sizeof(Elf32_Phdr)*(ehdr->e_phnum));
@@ -39,39 +37,30 @@ void load_and_run_elf(char** exe) {
     
 
     for (int i = 0; i < ehdr->e_phnum; i++) {
-        
-        // 2. Iterate through the PHDR table and find the section of PT_LOAD type that contains the address of the entrypoint method in fib.c
         if (phdr[i].p_type == PT_LOAD) {
-            if (ehdr->e_entry >= phdr[i].p_vaddr && ehdr->e_entry < phdr[i].p_vaddr + phdr[i].p_memsz) {
-
-                // 3. Allocate memory of the size "p_memsz" using mmap function
-                void *virtual_mem = mmap(NULL, phdr[i].p_memsz,
+            // 3. Allocate memory of the size "p_memsz" using mmap function
+            void *virtual_mem = mmap((void*)phdr[i].p_vaddr, phdr[i].p_memsz,
                                PROT_READ | PROT_WRITE | PROT_EXEC,
                                MAP_ANONYMOUS | MAP_PRIVATE, 0, 0);
-                if (virtual_mem == MAP_FAILED) {
-                    printf("mmap failed\n");
-                    exit(1);
-                }
-                
+            if (virtual_mem == MAP_FAILED) {
+                printf("mmap failed\n");
+                exit(1);
+            }
+            if (ehdr->e_entry >= phdr[i].p_vaddr && ehdr->e_entry < phdr[i].p_vaddr + phdr[i].p_memsz) {
                 off_t x = lseek(fd, phdr[i].p_offset, SEEK_SET);
                 
                 if(x < 0){
-                    printf("error");
+                    printf("An error occured");
                     exit(1);
                 }
 
                 size_t z = read(fd, virtual_mem, phdr[i].p_memsz);
                 if(z != phdr[i].p_memsz || z <= 0){
-                        printf("error2");
+                        printf("Failed to copy segment content in memory");
                         exit(1);
                 }
-
-                ELF32_Addr relative_dist = ehdr->e_entry - phdr[i].p_vaddr;
-                void* actual_entry = (char*)virtual_mem + relative_dist;
                 
-                int (*_start)(void) = (int (*)(void))(actual_entry);
-                // _start* f = (_start*)(ehdr->e_entry);
-                printf("inside\n");
+                int (*_start)(void) = (int (*)(void))(ehdr->e_entry);
 
                 int result = _start();
                 printf("User _start return value: %d\n", result);
@@ -92,7 +81,7 @@ int main(int argc, char** argv) {
 
     load_and_run_elf(argv);
 
-    loader_cleanup(NULL);
+    loader_cleanup();
 
     return 0;
 }
