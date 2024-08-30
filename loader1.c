@@ -65,8 +65,11 @@ void load_and_run_elf(char** exe) {
                         printf("error2");
                         exit(1);
                 }
+
+                ELF32_Addr relative_dist = ehdr->e_entry - phdr[i].p_vaddr;
+                void* actual_entry = (char*)virtual_mem + relative_dist;
                 
-                int (*_start)(void) = (int (*)(void))(ehdr->e_entry);
+                int (*_start)(void) = (int (*)(void))(actual_entry);
                 // _start* f = (_start*)(ehdr->e_entry);
                 printf("inside\n");
 
