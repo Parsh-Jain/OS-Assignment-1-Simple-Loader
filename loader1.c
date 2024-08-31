@@ -49,7 +49,7 @@ void load_and_run_elf(char** exe) {
             if (ehdr->e_entry >= phdr[i].p_vaddr && ehdr->e_entry < phdr[i].p_vaddr + phdr[i].p_memsz) {
                 off_t x = lseek(fd, phdr[i].p_offset, SEEK_SET);
                 
-                if(x < 0){
+                if(x <= 0){
                     printf("An error occured");
                     exit(1);
                 }
